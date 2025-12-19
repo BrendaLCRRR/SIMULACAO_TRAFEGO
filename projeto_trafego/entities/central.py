@@ -1,49 +1,68 @@
+# ARQUIVO: entities/central.py
+import matplotlib.pyplot as plt
 
 class Central:
-    def __init__(self, comunicador, config_cidade):
-        self.comunicador = comunicador
-        self.frota_estados = {} 
-        self.bloqueados = set()
-        self.historico = {} 
-        self.comunicador.registrar_central(self)
+    def __init__(self, comm_manager):
+        self.id = "CENTRAL_MAIN"
+        self.comm_manager = comm_manager
+        self.comm_manager.registrar_ouvinte(self.id, self)
+        
+        self.historico = {}
+        # Novo dicionário para saber onde cada carro está AGORA (última posição recebida)
+        self.posicoes_atuais = {} 
+        self.tempo_simulacao = 0
 
     def receber_mensagem(self, remetente, tipo, dados):
-        if tipo == "STATUS":
-            self.frota_estados[remetente] = dados
-            self._salvar_historico(remetente, dados)
-        elif tipo == "CHEGUEI":
-            print(f"[CENTRAL] {remetente} chegou ao destino.")
-
-    def _salvar_historico(self, id_carro, dados):
-        if id_carro not in self.historico: self.historico[id_carro] = []
-        self.historico[id_carro].append({"pos": list(dados['pos']), "vel": dados.get('vel', 0)})
-
-    def monitorar_seguranca(self):
-        ids = list(self.frota_estados.keys())
-        for i in range(len(ids)):
-            for j in range(i + 1, len(ids)):
-                id_a, id_b = ids[i], ids[j]
-                pos_a, pos_b = self.frota_estados[id_a]['pos'], self.frota_estados[id_b]['pos']
-                dist = ((pos_a[0]-pos_b[0])**2 + (pos_a[1]-pos_b[1])**2)**0.5
-                
-                if dist < 40:
-                    if id_a not in self.bloqueados:
-                        print(f"🛑 [CENTRAL] ALERTA COLISÃO! Parando {id_a}...")
-                        self._enviar_ordem(id_a, velocidade=0)
-                        self.bloqueados.add(id_a)
-                elif dist > 60:
-                    if id_a in self.bloqueados:
-                        print(f" [CENTRAL] Liberando {id_a}...")
-                        self._enviar_ordem(id_a, velocidade=30)
-                        self.bloqueados.remove(id_a)
-
-    def _enviar_ordem(self, id_carro, destino=None, velocidade=None):
-        cmd = {}
-        if destino: cmd["destino"] = destino
-        if velocidade is not None: cmd["velocidade"] = velocidade
-        if cmd: self.comunicador.enviar_mensagem("CENTRAL", id_carro, "MOVER", cmd)
+        if tipo == "STATUS_CARRO":
+            x_atual = dados.get("x")
             
-    def exibir_relatorio_final(self):
-        print("\n=== RELATÓRIO HISTÓRICO ===")
-        for id_carro, logs in self.historico.items():
-            print(f"Carro {id_carro}: {len(logs)} registros.")
+            # 1. Guarda Histórico para o Gráfico
+            if remetente not in self.historico:
+                self.historico[remetente] = []
+            self.historico[remetente].append((self.tempo_simulacao, x_atual))
+            
+            # 2. Atualiza Posição Atual para Cálculos de Colisão
+            self.posicoes_atuais[remetente] = x_atual
+            
+            # 3. Verifica Colisão (A Lógica Inteligente)
+            self.verificar_distancia_seguranca(remetente, x_atual)
+
+        elif tipo == "QUERO_CARRO":
+             print(f"   🏢 [CENTRAL] Pedido de {remetente}.")
+             # Aqui normalmente haveria lógica de escolha de carro, 
+             # mas no main.py forçamos manualmente para o teste.
+
+    def verificar_distancia_seguranca(self, carro_id, x_atual):
+        # Compara este carro com todos os outros
+        for outro_carro, x_outro in self.posicoes_atuais.items():
+            if carro_id == outro_carro:
+                continue # Não comparar com ele mesmo
+            
+            distancia = x_outro - x_atual
+            
+            # Se o outro carro estiver à frente (distancia positiva) e muito perto (< 30 metros)
+            if 0 < distancia < 30:
+                print(f"   ⚠️ PERIGO: {carro_id} está muito perto de {outro_carro} ({distancia:.1f}m)!")
+                print(f"   🛑 ENVIANDO COMANDO DE FREAR PARA {carro_id}")
+                self.comm_manager.enviar_mensagem(self.id, carro_id, "MUDAR_VELOCIDADE", {"valor": 0}) # Para o carro
+            
+            # (Opcional) Se a distância voltar a ser segura, poderia mandar andar de novo, 
+            # mas vamos manter simples por enquanto.
+
+    def tick(self, delta_tempo):
+        self.tempo_simulacao += delta_tempo
+
+    def gerar_grafico(self):
+        print("Gerando gráfico...")
+        plt.figure(figsize=(10, 6))
+        for carro_id, dados in self.historico.items():
+            tempos = [d[0] for d in dados]
+            posicoes = [d[1] for d in dados]
+            plt.plot(tempos, posicoes, label=carro_id, linewidth=2)
+        
+        plt.xlabel("Tempo (s)")
+        plt.ylabel("Posição X (m)")
+        plt.title("Simulação de Tráfego: Teste de Colisão")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
