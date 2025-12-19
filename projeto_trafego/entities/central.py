@@ -29,8 +29,8 @@ class Central:
 
         elif tipo == "QUERO_CARRO":
              print(f"   🏢 [CENTRAL] Pedido de {remetente}.")
-             # Aqui normalmente haveria lógica de escolha de carro, 
-             # mas no main.py forçamos manualmente para o teste.
+              
+             
 
     def verificar_distancia_seguranca(self, carro_id, x_atual):
         # Compara este carro com todos os outros
@@ -46,8 +46,8 @@ class Central:
                 print(f"   🛑 ENVIANDO COMANDO DE FREAR PARA {carro_id}")
                 self.comm_manager.enviar_mensagem(self.id, carro_id, "MUDAR_VELOCIDADE", {"valor": 0}) # Para o carro
             
-            # (Opcional) Se a distância voltar a ser segura, poderia mandar andar de novo, 
-            # mas vamos manter simples por enquanto.
+            
+            
 
     def tick(self, delta_tempo):
         self.tempo_simulacao += delta_tempo

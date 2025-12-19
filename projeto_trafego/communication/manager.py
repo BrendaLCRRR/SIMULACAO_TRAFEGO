@@ -67,7 +67,7 @@ class CommunicationManager:
             if destinatario_real in self.listeners:
                 entidade = self.listeners[destinatario_real]
                 
-                # O Pulo do Gato: Chama o método receber_mensagem da classe específica
+                #Chama o método receber_mensagem da classe específica
                 if hasattr(entidade, 'receber_mensagem'):
                     entidade.receber_mensagem(payload["remetente"], payload["tipo"], payload["dados"])
             

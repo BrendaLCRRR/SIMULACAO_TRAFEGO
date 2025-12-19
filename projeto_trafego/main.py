@@ -1,6 +1,6 @@
 # ARQUIVO: main.py
 import time
-import config  # <--- Importamos as configurações
+import config 
 from communication.manager import CommunicationManager
 from entities.central import Central
 from entities.car import Carro
@@ -12,7 +12,7 @@ def main():
     cidade = CityMap() # [cite: 56, 61]
     central = Central(manager)
     
-    # --- CRIAÇÃO AUTOMÁTICA (Baseada no config.py)  ---
+    
     carros = []
     print("\n--- Configurando Entidades ---")
     
