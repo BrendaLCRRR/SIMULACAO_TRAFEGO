@@ -1,5 +1,6 @@
 # ARQUIVO: entities/central.py
 import matplotlib.pyplot as plt
+import math
 
 class Central:
     def __init__(self, comm_manager):
@@ -7,62 +8,66 @@ class Central:
         self.comm_manager = comm_manager
         self.comm_manager.registrar_ouvinte(self.id, self)
         
-        self.historico = {}
-        # Novo dicionário para saber onde cada carro está AGORA (última posição recebida)
+        # Histórico guarda (X, Y) para desenhar o trajeto
+        self.historico = {} 
         self.posicoes_atuais = {} 
-        self.tempo_simulacao = 0
 
     def receber_mensagem(self, remetente, tipo, dados):
         if tipo == "STATUS_CARRO":
-            x_atual = dados.get("x")
+            x = dados["x"]
+            y = dados["y"]
             
-            # 1. Guarda Histórico para o Gráfico
+            # 1. Guarda Histórico (Trajetória)
             if remetente not in self.historico:
-                self.historico[remetente] = []
-            self.historico[remetente].append((self.tempo_simulacao, x_atual))
+                self.historico[remetente] = {"x": [], "y": []}
+            self.historico[remetente]["x"].append(x)
+            self.historico[remetente]["y"].append(y)
             
-            # 2. Atualiza Posição Atual para Cálculos de Colisão
-            self.posicoes_atuais[remetente] = x_atual
+            self.posicoes_atuais[remetente] = {"x": x, "y": y}
             
-            # 3. Verifica Colisão (A Lógica Inteligente)
-            self.verificar_distancia_seguranca(remetente, x_atual)
+            # 2. Lógica de Tráfego e Curvas
+            self.controlar_trafego(remetente, x, y)
 
-        elif tipo == "QUERO_CARRO":
-             print(f"   🏢 [CENTRAL] Pedido de {remetente}.")
-              
-             
+    def controlar_trafego(self, id_carro, x, y):
+        # A) VERIFICAR CRUZAMENTO (Exemplo: Rua Vertical no X=500)
+        # Se o carro estiver perto de 500 (entre 495 e 505) e ainda estiver na rua de baixo (y < 60)
+        if (490 < x < 510) and (y < 60):
+            # Manda virar para a rua vertical
+            self.comm_manager.enviar_mensagem(self.id, id_carro, "VIRAR_ESQUERDA", {})
 
-    def verificar_distancia_seguranca(self, carro_id, x_atual):
-        # Compara este carro com todos os outros
-        for outro_carro, x_outro in self.posicoes_atuais.items():
-            if carro_id == outro_carro:
-                continue # Não comparar com ele mesmo
+        # B) EVITAR COLISÃO (Simplificado para Distância Euclidiana)
+        for outro_id, pos in self.posicoes_atuais.items():
+            if id_carro == outro_id: continue
             
-            distancia = x_outro - x_atual
+            # Distância Pitágoras: Raiz((x2-x1)² + (y2-y1)²)
+            dist = math.sqrt((x - pos["x"])**2 + (y - pos["y"])**2)
             
-            # Se o outro carro estiver à frente (distancia positiva) e muito perto (< 30 metros)
-            if 0 < distancia < 30:
-                print(f"   ⚠️ PERIGO: {carro_id} está muito perto de {outro_carro} ({distancia:.1f}m)!")
-                print(f"   🛑 ENVIANDO COMANDO DE FREAR PARA {carro_id}")
-                self.comm_manager.enviar_mensagem(self.id, carro_id, "MUDAR_VELOCIDADE", {"valor": 0}) # Para o carro
-            
-            
-            
+            # Se tiver alguém MUITO perto na frente (< 20m)
+            if 0 < dist < 20:
+                print(f"   ⚠️ PERIGO: {id_carro} quase batendo em {outro_id}!")
+                self.comm_manager.enviar_mensagem(self.id, id_carro, "MUDAR_VELOCIDADE", {"valor": 0})
 
     def tick(self, delta_tempo):
-        self.tempo_simulacao += delta_tempo
+        pass # O relógio avança, mas a lógica está no recebimento de msg
 
     def gerar_grafico(self):
-        print("Gerando gráfico...")
-        plt.figure(figsize=(10, 6))
-        for carro_id, dados in self.historico.items():
-            tempos = [d[0] for d in dados]
-            posicoes = [d[1] for d in dados]
-            plt.plot(tempos, posicoes, label=carro_id, linewidth=2)
+        print("Gerando Mapa da Cidade...")
+        plt.figure(figsize=(8, 8))
         
-        plt.xlabel("Tempo (s)")
-        plt.ylabel("Posição X (m)")
-        plt.title("Simulação de Tráfego: Teste de Colisão")
+        # Desenhar as Ruas (Só para visualização)
+        plt.axhline(y=50, color='gray', linestyle='--', linewidth=20, alpha=0.3, label="Rua Horizontal")
+        plt.axvline(x=500, color='gray', linestyle='--', linewidth=20, alpha=0.3, label="Rua Vertical")
+        
+        # Desenhar Trajetórias dos Carros
+        for carro_id, dados in self.historico.items():
+            plt.plot(dados["x"], dados["y"], linewidth=3, label=f"Trajeto {carro_id}")
+            # Marca o ponto final
+            plt.scatter(dados["x"][-1], dados["y"][-1], s=100)
+
+        plt.title("Mapa de Tráfego: Visão Superior (2D)")
+        plt.xlabel("Posição X (metros)")
+        plt.ylabel("Posição Y (metros)")
         plt.legend()
         plt.grid(True)
+        plt.axis('equal') # Para o gráfico não ficar esticado
         plt.show()

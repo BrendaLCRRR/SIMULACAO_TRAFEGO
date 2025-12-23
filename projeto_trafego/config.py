@@ -1,22 +1,18 @@
 # ARQUIVO: config.py
 
-# Configurações da Simulação
-SIMULATION_DURATION = 40  # Segundos de simulação
-TIME_STEP = 1             # Quanto tempo passa por "tick"
+SIMULATION_DURATION = 60 
+TIME_STEP = 1             
 
-# Configuração dos Carros (ID, Posição X, Posição Y, Velocidade Inicial)
+# --- CENÁRIO: 1 CARRO ÚNICO ---
 CARS_CONFIG = [
-    {"id": "CAR_01", "x": 0,   "y": 50, "speed": 20}, # Carro rápido atrás
-    {"id": "CAR_02", "x": 300, "y": 50, "speed": 10}, # Carro lento à frente
-    # Podes adicionar mais carros aqui facilmente
-    # {"id": "CAR_03", "x": 600, "y": 50, "speed": 15},
+    # Apenas 1 carro para atender todo mundo
+    {"id": "UBER_01", "x": 0, "y": 50, "speed": 10}, 
 ]
 
-# Configuração das Pessoas
+# --- 2 PESSOAS ---
 PEOPLE_CONFIG = [
-    {"id": "JOAO"},
-    {"id": "MARIA"}
+    {"id": "JOAO_PRIMEIRO"}, # Vai pedir primeiro
+    {"id": "MARIA_DEPOIS"}   # Vai pedir depois
 ]
 
-# Parâmetros de Segurança
-SAFE_DISTANCE = 30 # Metros
+SAFE_DISTANCE = 30

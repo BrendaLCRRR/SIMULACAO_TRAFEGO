@@ -1,43 +1,45 @@
 # ARQUIVO: entities/car.py
+import math
+
 class Carro:
-    def __init__(self, id_carro, comm_manager, x_inicial, y_inicial):
+    def __init__(self, id_carro, manager, x_inicial, y_inicial):
         self.id = id_carro
-        self.comm_manager = comm_manager
-        self.comm_manager.registrar_ouvinte(self.id, self)
+        self.manager = manager
+        self.manager.registrar_ouvinte(self.id, self)
         
-        # Física e Estado
+        # Posição 2D
         self.x = x_inicial
         self.y = y_inicial
-        self.velocidade = 0  # m/s (começa parado)
-        self.rua_atual = "RUA_H1" # Exemplo: Começa na rua horizontal
-        self.destino_x = None
+        
+        self.velocidade = 0 
+        
+        # Vetor de Direção: (1, 0) = Direita | (0, 1) = Cima
+        self.dir_x = 1 
+        self.dir_y = 0
+        
+        self.ja_virou = False # Para garantir que ele só vira uma vez no cruzamento
 
     def receber_mensagem(self, remetente, tipo, dados):
-        # A Central manda mudar velocidade para evitar colisão [cite: 26, 43]
         if tipo == "MUDAR_VELOCIDADE":
-            nova_vel = dados.get("valor")
-            self.velocidade = nova_vel
-            print(f"   🚗 [{self.id}] Velocidade alterada para {self.velocidade} m/s")
-
-        elif tipo == "DEFINIR_DESTINO":
-            self.destino_x = dados.get("x")
-            print(f"   🚗 [{self.id}] Novo destino recebido: X={self.destino_x}")
-            # Começa a andar
-            self.velocidade = 10 
+            self.velocidade = dados["valor"]
+            print(f"   🚗 [{self.id}] Nova velocidade: {self.velocidade} m/s")
+            
+        elif tipo == "VIRAR_ESQUERDA":
+            if not self.ja_virou:
+                print(f"   ↩️ [{self.id}] Recebeu ordem para VIRAR!")
+                # Matemática: Para virar 90 graus à esquerda
+                # Se estava indo p/ Direita (1,0) -> Vai p/ Cima (0,1)
+                self.dir_x = 0
+                self.dir_y = 1
+                self.ja_virou = True # Marca que a curva foi feita
 
     def tick(self, delta_tempo):
-        """
-        Método chamado a cada 'frame' da simulação.
-        Atualiza a posição (Física de Tempo Discreto).
-        """
-        if self.velocidade > 0 and self.destino_x is not None:
-            # Move o carro: Espaço = Velocidade * Tempo
-            deslocamento = self.velocidade * delta_tempo
+        if self.velocidade > 0:
+            # FÍSICA VETORIAL:
+            # Posição = Posição + (Velocidade * Direção * Tempo)
+            self.x += self.velocidade * self.dir_x * delta_tempo
+            self.y += self.velocidade * self.dir_y * delta_tempo
             
-            # Lógica simples para andar no eixo X (Rua Horizontal)
-            if self.x < self.destino_x:
-                self.x += deslocamento
-            
-            # Envia relatório periódico para a central [cite: 45]
-            dados_status = {"x": self.x, "y": self.y, "vel": self.velocidade}
-            self.comm_manager.enviar_mensagem(self.id, "CENTRAL_MAIN", "STATUS_CARRO", dados_status)
+            # Envia posição atualizada para a Central
+            self.manager.enviar_mensagem(self.id, "CENTRAL_MAIN", "STATUS_CARRO", 
+                                         {"x": self.x, "y": self.y, "vel": self.velocidade})
