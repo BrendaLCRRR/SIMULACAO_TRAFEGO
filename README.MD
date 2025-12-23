@@ -1,15 +1,24 @@
-# 🚦 Simulação de Tráfego IoT com MQTT
+# 🚖 Simulador de Tráfego Autônomo - Sistema de Atendimento ("Uber")
 
-Este projeto simula um sistema de controle de tráfego inteligente utilizando Python. O sistema monitora a posição de veículos autônomos e previne colisões em cruzamentos através de uma Central de Controle conectada via protocolo MQTT.
+**Disciplina:** Introdução a Python em Engenharia
+**Versão:** 3.0 (Lógica de Atendimento Sequencial)
 
-## 📋 Funcionalidades
-- **Veículos Autônomos:** Entidades que se movem e reportam telemetria.
-- **Central de Controle:** Monitora distâncias e envia ordens de parada/movimento.
-- **Comunicação MQTT:** Uso de *broker* público (test.mosquitto.org) para comunicação em tempo real.
-- **Prevenção de Colisões:** Algoritmo que detecta proximidade e freia carros automaticamente.
+## 📋 Descrição do Projeto
+Este projeto simula um ambiente de tráfego inteligente onde veículos autônomos recebem ordens de uma **Central de Controlo via MQTT**.
+O foco desta versão é a **Gestão de Recursos Compartilhados**: Um único carro deve atender a solicitações de passageiros diferentes em momentos distintos, sem conflitos.
 
-## 🚀 Como Rodar
+## ⚙️ Cenário de Teste Atual (Versão 3)
+O sistema está configurado para demonstrar o atendimento sequencial:
+1.  **Recurso:** 1 Carro Autônomo (`UBER_01`).
+2.  **Solicitantes:** 2 Passageiros (`JOAO` e `MARIA`).
+3.  **Lógica:** O carro começa parado. Os pedidos ocorrem dinamicamente durante a execução.
 
-1. Clone o repositório:
+### ⏱ Cronologia da Simulação
+* **T = 0s:** Início da simulação. Carro aguarda na base.
+* **T = 5s:** 🟢 **JOAO_PRIMEIRO** solicita o carro. A Central despacha o veículo (Velocidade sobe para 15 m/s).
+* **T = 35s:** 🟡 **MARIA_DEPOIS** solicita o carro. O veículo, que já estava em movimento, recebe a nova ordem e continua o atendimento (simulando buscar o próximo passageiro).
+
+## 🚀 Como Executar
+1. Instale as dependências:
    ```bash
-   git clone [https://github.com/BrendaLCRRR/SIMULACAO_TRAFEGO.git](https://github.com/BrendaLCRRR/SIMULACAO_TRAFEGO.git)
+   pip install paho-mqtt matplotlib
